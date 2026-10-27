@@ -10,17 +10,17 @@
 
 static void blur(const unsigned char *in, unsigned char *out, int w, int h){
     for (int y = 0; y < h; y++){
-        for (int x = 0; x < w; x++){                  // (1) w
+        for (int x = 0; x < w; x++){
             float suma = 0.0f;
             for (int i = -1; i <= 1; i++){
                 int f = y + i;
                 if (f < 0) f = 0;
-                if (f > h - 1) f = h - 1;             // (2) h, h
+                if (f > h - 1) f = h - 1;
                 for (int j = -1; j <= 1; j++){
                     int c = x + j;
                     if (c < 0) c = 0;
-                    if (c > w - 1) c = w - 1;         // (3) w, w
-                    suma += (1/9.f) * in[f * w + c];  // (4) f, c
+                    if (c > w - 1) c = w - 1;
+                    suma += (1/9.f) * in[f * w + c];
                 }
             }
             out[y * w + x] = (unsigned char)(suma + 0.5f);
@@ -28,10 +28,31 @@ static void blur(const unsigned char *in, unsigned char *out, int w, int h){
     }
 }
 
-
 static void gauss(const unsigned char *in, unsigned char *out, int w, int h){
-    /* TODO: ventana 5x5, coeficientes k/273.f (matriz en el enunciado) */
-    (void)in; (void)out; (void)w; (void)h;
+    const float K[5][5] = {
+        {  1/273.f,  4/273.f,  7/273.f,  4/273.f,  1/273.f },
+        {  4/273.f, 16/273.f, 26/273.f, 16/273.f,  4/273.f },
+        {  7/273.f, 26/273.f, 41/273.f, 26/273.f,  7/273.f },
+        {  4/273.f, 16/273.f, 26/273.f, 16/273.f,  4/273.f },
+        {  1/273.f,  4/273.f,  7/273.f,  4/273.f,  1/273.f }
+    };
+    for (int y = 0; y < h; y++){
+        for (int x = 0; x < w; x++){
+            float suma = 0.0f;
+            for (int i = -2; i <= 2; i++){
+                int f = y + i;
+                if (f < 0) f = 0;
+                if (f > h - 1) f = h - 1;
+                for (int j = -2; j <= 2; j++){
+                    int c = x + j;
+                    if (c < 0) c = 0;
+                    if (c > w - 1) c = w - 1;
+                    suma += K[i + 2][j + 2] * in[f * w + c];
+                }
+            }
+            out[y * w + x] = (unsigned char)(suma + 0.5f);
+        }
+    }
 }
 
 static void sobel(const unsigned char *in, unsigned char *out, int w, int h){
