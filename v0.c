@@ -1,12 +1,4 @@
-#include "pgm.h"   /* siempre antes que cualquier otro #include */
-
-/* ===== V0: version simple, sin optimizaciones =====
- * Cada funcion recibe la imagen de entrada y escribe la de salida (w*h bytes).
- * Recuerde (enunciado, seccion 2):
- *   - coeficientes y suma en float, sumando por filas (arriba->abajo, izq->der)
- *   - orillas: clampear cada indice por separado a [0, H-1] y [0, W-1]
- *   - salida = (unsigned char)(suma + 0.5f), despues de |suma| y min(255)
- */
+#include "pgm.h"
 
 static void blur(const unsigned char *in, unsigned char *out, int w, int h){
     for (int y = 0; y < h; y++){
@@ -56,8 +48,30 @@ static void gauss(const unsigned char *in, unsigned char *out, int w, int h){
 }
 
 static void sobel(const unsigned char *in, unsigned char *out, int w, int h){
-    /* TODO: ventana 3x3 {-1 0 1; -2 0 2; -1 0 1}; primero valor absoluto, luego recorte a 255 */
-    (void)in; (void)out; (void)w; (void)h;
+    const float K[3][3] = {
+        { -1, 0, 1 },
+        { -2, 0, 2 },
+        { -1, 0, 1 }
+    };
+    for (int y = 0; y < h; y++){
+        for (int x = 0; x < w; x++){
+            float suma = 0.0f;
+            for (int i = -1; i <= 1; i++){
+                int f = y + i;
+                if (f < 0) f = 0;
+                if (f > h - 1) f = h - 1;
+                for (int j = -1; j <= 1; j++){
+                    int c = x + j;
+                    if (c < 0) c = 0;
+                    if (c > w - 1) c = w - 1;
+                    suma += K[i + 1][j + 1] * in[f * w + c];
+                }
+            }
+            if (suma < 0) suma = -suma;
+            if (suma > 255) suma = 255;
+            out[y * w + x] = (unsigned char)(suma + 0.5f);
+        }
+    }
 }
 
 typedef void (*filtro_fn)(const unsigned char *, unsigned char *, int, int);
@@ -85,7 +99,7 @@ int main(int argc, char **argv){
         t[r] = ahora() - t0;
     }
 
-    if (w <= 8 && h <= 8){               /* imagen de prueba: imprime la matriz */
+    if (w <= 8 && h <= 8){
         for (int y = 0; y < h; y++){
             for (int x = 0; x < w; x++) printf("%4d", out[y * w + x]);
             printf("\n");
